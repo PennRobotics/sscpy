@@ -11,7 +11,7 @@ class ObjectClass(Enum):
     INELIGIBLE
 
 class EligibleObject:
-	def __init__(self, objid, name, price):
+    def __init__(self, objid, name, price):
         self.id = objid
         self.name = name
         self.price = price
@@ -25,50 +25,48 @@ class EligibleObject:
 from ctypes import c_uint32, c_uint64
 
 class Prng:
-	def from_seed(self, seed):
-		pass
+    def from_seed(self, seed):
+        pass
 
     def next(self):
-		# returns a non-negative i32
-		pass
+        # returns a non-negative i32
+        pass
 
     def next_max(self, max):
-		# returns a value in [0, max)
-		pass
-
+        # returns a value in [0, max)
+        pass
 
     def next_min_max(self, range):
-		# returns a value in [min, max)
-		pass
+        # returns a value in [min, max)
+        pass
 
     def next_double(self):
-		# returns a double in [0, 1)
-		pass
+        # returns a double in [0, 1)
+        pass
 
 class JKiss:
-	def __init__(self, seed):
-		self.x = seed
-		self.y
-		self.z
-		self.c
+    def __init__(self, seed):
+        self.x = seed
+        self.y
+        self.z
+        self.c
 
     def gen(self):
         self.x = c_uint32(314527869) * self.x + c_uint32(1234567u32)
-		self.x = c_uint32(self.x)
+        self.x = c_uint32(self.x)
 
-		self.y = c_uint32(self.y ^ (self.y << 5))
-		self.y = c_uint32(self.y ^ (self.y >> 7))
-		self.y = c_uint32(self.y ^ (self.y << 22))
+        self.y = c_uint32(self.y ^ (self.y << 5))
+        self.y = c_uint32(self.y ^ (self.y >> 7))
+        self.y = c_uint32(self.y ^ (self.y << 22))
 
         # Should not overflow; max expected is 0xfffa28490005d7b6
-        t = c_uint64(4294584393 * c_uint64(self.z) + (self.c.0 as u64);
-        self.z = Wrapping(t as u32);
-        self.c = Wrapping((t >> 32usize) as u32);
+        t = c_uint64(4294584393 * c_uint64(self.z) + c_uint64(self.c))
+        self.z = c_uint32(t)
+        self.c = c_uint32(t >> 32)
 
-        (self.x + self.y + self.z).0
-    }
-}
+        return c_uint32(self.x + self.y + self.z)
 
+# TODO-hi: continue port from here!
 impl Prng for Jkiss {
     fn from_seed(seed: i32) -> Self {
         Jkiss {
@@ -117,20 +115,20 @@ impl Prng for Jkiss {
 
 def get_prng(platform, seed):
     match(platform):
-		case "arm":
-			return new JKiss from_seed seed  # TODO
-		_:  # TODO: raise error (x86 not supported!)
+        case "arm":
+            return new JKiss from_seed seed  # TODO
+        _:  # TODO: raise error (x86 not supported!)
 #####
 
 class GenStock:
     def __init__(self, items):
-		self.items = items
+        self.items = items
 
 class GenItem:
-	def __init__(self, eligible_index, price, quantity):
-		self.eligible_index = eligible_index
-		self.price = price
-		self.quantity = quantity
+    def __init__(self, eligible_index, price, quantity):
+        self.eligible_index = eligible_index
+        self.price = price
+        self.quantity = quantity
 
 # Forward-simulate stock for a given platform and RNG seed
 def gen_stock(platform, seed) -> GeneratedStock {
@@ -145,22 +143,22 @@ def gen_stock(platform, seed) -> GeneratedStock {
     keyed.sort();  # TODO: sort by key using lambda
 
     # Phase B: price and quantity rolls, one per slot in sort-key (= UI slot) order.
-	items = []
-	for k, v in keyed:
-        set_idx = prng.next_max(10);
-        mult_idx = prng.next_max(3);
-        qty_roll = prng.next_double();
+    items = []
+    for k, v in keyed:
+        set_idx = prng.next_max(10)
+        mult_idx = prng.next_max(3)
+        qty_roll = prng.next_double()
 
         elig_idx = keyed[slot].1;
-        base_price = ELIGIBLE_OBJECTS[elig_idx as usize].price;
+        base_price = ELIGIBLE_OBJECTS[elig_idx as usize].price
         set_price = (set_idx as u16 + 1) * 100;
         multiplied = base_price * [3u16, 4u16, 5u16][mult_idx as usize];
         price = max(set_price, multiplied);
         quantity = if qty_roll < 0.1 { 5 } else { 1 };
 
-		items.push_back(GenItem(eligible_index: elig_idx, price, quantity))
+        items.push_back(GenItem(eligible_index: elig_idx, price, quantity))
 
-	return GenStock(items)
+    return GenStock(items)
 
 STOCK_QUANTITY = 10
 
@@ -184,8 +182,8 @@ class TM {
         for slot, item in enumerate(stock):
             observed_slots[item.eligible_index] = Some(slot);
         self.platform = platform
-		self.stock = stock
-		self.observed_slots = observed_slots
+        self.stock = stock
+        self.observed_slots = observed_slots
     }
 
     def seed_valid(self, seed):
@@ -312,7 +310,7 @@ def shop_seed(days_played, uid):
 
 /// Compute the SYNCED_RANDOM seed for a given key hash, uid, and days_played.
 ///
-/// Matches the game's `CreateRandom(key_hash, uniqueIDForThisGame, DaysPlayed)`:
+/// Matches the games `CreateRandom(key_hash, uniqueIDForThisGame, DaysPlayed)`:
 /// `xxHash32(pack_le_bytes([key_hash % 2147483647, uid % 2147483647, days_played % 2147483647, 0, 0]))`
 ///
 /// Note: uses full uid (NOT uid/2), unlike shop_seed.
@@ -338,17 +336,17 @@ def main():
     month = 1  # caution: 0-index!
     year = 1
 
-	# TODO: argparse
+    # TODO: argparse
             "--seed"
                 uid = args[i].parse().expect("--seed must be a non-negative integer")
             "--platform"
-				"arm"
-				"x86"
-				other? error
+                "arm"
+                "x86"
+                other? error
             "--day"
                 (check range)
             "--month"
-				(get as string, check range!!)
+                (get as string, check range!!)
             "--year"
                 (check range)
             other? error("unknown argument")
