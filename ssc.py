@@ -44,6 +44,14 @@ class Prng:
         # returns a double in [0, 1)
         pass
 
+def from_seed(seed):
+    return Jkiss(
+            x=c_uint32(seed),
+            y=c_uint32(987654321),
+            z=c_uint32(43219876),
+            c=c_uint32(6543217)
+            )
+
 class JKiss:
     def __init__(self, seed):
         self.x = seed
@@ -52,7 +60,7 @@ class JKiss:
         self.c
 
     def gen(self):
-        self.x = c_uint32(314527869) * self.x + c_uint32(1234567u32)
+        self.x = c_uint32(314527869) * self.x + c_uint32(1234567)
         self.x = c_uint32(self.x)
 
         self.y = c_uint32(self.y ^ (self.y << 5))
@@ -66,33 +74,19 @@ class JKiss:
 
         return c_uint32(self.x + self.y + self.z)
 
-# TODO-hi: continue port from here!
-impl Prng for Jkiss {
-    fn from_seed(seed: i32) -> Self {
-        Jkiss {
-            x: Wrapping(seed as u32),
-            y: Wrapping(987654321u32),
-            z: Wrapping(43219876u32),
-            c: Wrapping(6543217u32),
-        }
-    }
 
-    fn next(&mut self) -> i32 {
-        loop {
-            let random = self.gen() as i32;
-            if random == i32::MIN {
+    def next(self)
+        while True:
+            random = self.gen()
+            if random == INT_MIN:
                 continue;
-            }
-            let mask = random >> 31;
-            return (random ^ mask) + (mask & 1);
-        }
-    }
+            mask = random >> 31;
+            yield (random ^ mask) + (mask & 1);
 
-    fn next_max(&mut self, max: i32) -> i32 {
-        if max <= 0 {
-            return 0;
-        }
-        (self.gen() % max as u32) as i32
+    def next_max(self, max):
+        if max <= 0:
+            yield 0;
+        yield (self.gen() % max as u32) as i32  # TODO: continue port from here
     }
 
     fn next_min_max(&mut self, range: Range<i32>) -> i32 {
