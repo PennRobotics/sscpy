@@ -81,42 +81,43 @@ def getTreasureFromGeode(Item geode):
             # First 10 non-golden mystery boxes jump here:
             match r.Next(14):
                 case 0:
-                    return ItemRegistry.Create("(O)395", 3)  # TODO: continue referencing IDs frome here
+                    return ItemRegistry.Create("(O)395", 3)  # Coffee
                 case 1:
-                    return ItemRegistry.Create("(O)287", 5)
+                    return ItemRegistry.Create("(O)287", 5)  # Bomb
                 case 2:
                     return ItemRegistry.Create("(O)" + Crop.getRandomLowGradeCropForThisSeason(Game1.season), 8)
                 case 3:
-                    return ItemRegistry.Create("(O)" + r.Next(727, 734))
+                    return ItemRegistry.Create("(O)" + r.Next(727, 734))  # Fish Foods + Maple Bar
                 case 4:
-                    return ItemRegistry.Create("(O)" + getRandomIntWithExceptions(r, 194, 240, new List<int> { 217 }))
+                    return ItemRegistry.Create("(O)" + getRandomIntWithExceptions(r, 194, 240, new List<int> { 217 }))  # Foods
                 case 5:
-                    return ItemRegistry.Create("(O)709", 10)
+                    return ItemRegistry.Create("(O)709", 10)  # Hardwood
                 case 6:
-                    return ItemRegistry.Create("(O)369", 10)
+                    return ItemRegistry.Create("(O)369", 10)  # Quality Fertilizer
                 case 7:
-                    return ItemRegistry.Create("(O)466", 10)
+                    return ItemRegistry.Create("(O)466", 10)  # Deluxe Speed-Gro
                 case 8:
-                    return ItemRegistry.Create("(O)688")
+                    return ItemRegistry.Create("(O)688")  # Warp Totem: Farm
                 case 9:
-                    return ItemRegistry.Create("(O)689")
+                    return ItemRegistry.Create("(O)689")  # Warp Totem: Mountains
                 case 10:
-                    return ItemRegistry.Create("(O)770", 10)
+                    return ItemRegistry.Create("(O)770", 10)  # Mixed Seeds
                 case 11:
                     return ItemRegistry.Create("(O)MixedFlowerSeeds", 10)
                 case 12:
-                    match r.NextBool(0.4):
-                        case 0:  return "(O)525"
-                        case 1:  return "(O)529"
-                        case 2:  return "(O)888"
-                        case _:  return f"(O){r.Next(531, 533)}"
+                    if r.NextBool(0.4):
+                        match r.Next(4):
+                            case 0:  return "(O)525"  # Sturdy Ring
+                            case 1:  return "(O)529"  # Amethyst Ring
+                            case 2:  return "(O)888"  # Glowstone Ring
+                            case _:  return f"(O){r.Next(531, 533)}"  # Aquamarine Ring / Jade Ring
                     return ItemRegistry.Create("(O)MysteryBox", 2)
                 case 13:
-                    return ItemRegistry.Create("(O)690")
+                    return ItemRegistry.Create("(O)690")  # Warp Totem: Beach
                 case _:
-                    return ItemRegistry.Create("(O)382")
+                    return ItemRegistry.Create("(O)382")  # Coal
         if r.NextBool(0.1) and Game1.player.team.SpecialOrderRuleActive("DROP_QI_BEANS"):
-            return ItemRegistry.Create("(O)890", (!r.NextBool(0.25)) ? 1 : 5)
+            return ItemRegistry.Create("(O)890", 5 if r.NextBool(0.25) else 1)  # Qi Bean
         if (Game1.objectData.TryGetValue(geode.ItemId, out var data)):  # TODO: what is this even???
             geodeDrops = [data.GeodeDrops]
             if geodeDrops != null && geodeDrops.Count > 0 && (!data.GeodeDropsDefaultItems || r.NextBool()):  # TODO
@@ -138,47 +139,49 @@ def getTreasureFromGeode(Item geode):
             amount = 20
         if r.NextBool():
             match r.Next(4):
-                case 0:
-                case 1:
-                    return ItemRegistry.Create("(O)390", amount)
+                case 0 | 1:
+                    return ItemRegistry.Create("(O)390", amount)  # Stone
                 case 2:
-                    return ItemRegistry.Create("(O)330")
+                    return ItemRegistry.Create("(O)330")  # Clay
                 case _:
-                    return geodeId switch  # TODO: convert to match as earlier statements
-                    {
-                        "(O)749" => ItemRegistry.Create("(O)" + (82 + r.Next(3) * 2)),   # TODO: finish edits from here!!
-                        "(O)535" => ItemRegistry.Create("(O)86"), 
-                        "(O)536" => ItemRegistry.Create("(O)84"), 
-                        _ => ItemRegistry.Create("(O)82"), 
-                    }
-        if (!(geodeId == "(O)535"))
-        {
-            if (geodeId == "(O)536")
-            {
-                return r.Next(4) switch
-                {
-                    0 => ItemRegistry.Create("(O)378", amount), 
-                    1 => ItemRegistry.Create("(O)380", amount), 
-                    2 => ItemRegistry.Create("(O)382", amount), 
-                    _ => ItemRegistry.Create((Game1.player.deepestMineLevel > 75) ? "(O)384" : "(O)380", amount), 
-                }
-            }
-            return r.Next(5) switch
-            {
-                0 => ItemRegistry.Create("(O)378", amount), 
-                1 => ItemRegistry.Create("(O)380", amount), 
-                2 => ItemRegistry.Create("(O)382", amount), 
-                3 => ItemRegistry.Create("(O)384", amount), 
-                _ => ItemRegistry.Create("(O)386", amount / 2 + 1), 
-            }
-        }
-        return r.Next(3) switch
-        {
-            0 => ItemRegistry.Create("(O)378", amount), 
-            1 => ItemRegistry.Create((Game1.player.deepestMineLevel > 25) ? "(O)380" : "(O)378", amount), 
-            _ => ItemRegistry.Create("(O)382", amount), 
-        }
-    }
+                    match geodeId:
+                        case "(O)749":
+                            return ItemRegistry.Create("(O)" + (82 + r.Next(3) * 2))  # Omni -> Fire Quartz / Frozen Tear / Earth Crystal
+                        case "(O)535":
+                            return ItemRegistry.Create("(O)86")  # Geode -> Earth Crystal
+                        case "(O)536":
+                            return ItemRegistry.Create("(O)84")  # Frozen Geode -> Frozen Tear
+                        case _:
+                            return ItemRegistry.Create("(O)82")  # Magma Geode -> Fire Quartz
+        if geodeId != "(O)535":  # [not] Geode
+            if geodeId == "(O)536":  # Frozen Geode
+                match r.Next(4):
+                    case 0:
+                        return ItemRegistry.Create("(O)378", amount)  # Copper Ore
+                    case 1:
+                        return ItemRegistry.Create("(O)380", amount)  # Iron Ore
+                    case 2:
+                        return ItemRegistry.Create("(O)382", amount)  # Coal
+                    case _:
+                        return ItemRegistry.Create("(O)384" if Game1.player.deepestMineLevel > 75 else "(O)380", amount)  # Gold Ore / Iron Ore
+            match r.Next(5):
+                case 0:
+                    return ItemRegistry.Create("(O)378", amount)  # Copper Ore
+                case 1:
+                    return ItemRegistry.Create("(O)380", amount)  # Iron Ore
+                case 2:
+                    return ItemRegistry.Create("(O)382", amount)  # Coal
+                case 3:
+                    return ItemRegistry.Create("(O)384", amount)  # Gold Ore
+                case _:
+                    return ItemRegistry.Create("(O)386", amount / 2 + 1)  # Iridium Ore
+        match r.Next(3):
+            case 0:
+                return ItemRegistry.Create("(O)378", amount)  # Copper Ore
+            case 1:
+                return ItemRegistry.Create("(O)380" if Game1.player.deepestMineLevel > 25 else "(O)378", amount)  # Iron Ore / Copper Ore
+            case _:
+                return ItemRegistry.Create("(O)382", amount)  # Coal
     except Exception as e:
         Game1.log.Error("Geode '" + geode?.QualifiedItemId + "' failed creating treasure.", e)
 
