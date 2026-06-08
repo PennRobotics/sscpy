@@ -12,3 +12,7 @@ This is my own effort to simulate geode cracking in order to determine multiplay
 - [ ] figure out how much each geode reduces search space
 - [ ] would it be possible and feasible to search from any arbitrary geode count?
 
+
+## License
+
+MIT; full text in **LICENSE**
