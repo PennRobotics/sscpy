@@ -7,10 +7,6 @@ import numba
 
 import xxhash
 
-TOTAL_OBJECTS = 773
-
-##########
-### use ssc::codegen::ELIGIBLE_OBJECTS;
 class ObjectClass(Enum):
     # Passes both Layer 1 and Layer 2 filters.
     FULLY_ELIGIBLE = auto()
@@ -25,20 +21,14 @@ class EligibleObject:
         self.name = name
         self.price = price
 
-##########
-### use ssc::tm::{gen_stock, Platform};
-# uses max, BTreeSet, serde, prng, internal classes
-
-#####
-# PRNG
 class JKiss:
     def __init__(self, seed):
-        self.x = np.uint32(seed),
-        self.y = np.uint32(987654321),
-        self.z = np.uint32(43219876),
+        np.seterr(over='ignore')
+        self.x = np.uint32(seed)
+        self.y = np.uint32(987654321)
+        self.z = np.uint32(43219876)
         self.c = np.uint32(6543217)
 
-    @numba.njit(parallel=True)
     def gen(self):
         self.x = np.uint32(314527869) * self.x + np.uint32(1234567)
 
@@ -53,17 +43,17 @@ class JKiss:
         return np.uint32(self.x + self.y + self.z)
 
     def next(self):
-        while True:
+        random = self.gen()
+        print(f"r {random}")
+        while random == np.uint32(2147483648):
             random = self.gen()
-            if random == INT_MIN:
-                continue;
-            mask = random >> np.uint32(31);
-            yield (random ^ mask) + (mask & np.uint32(1));
+        mask = random >> np.uint32(31);
+        return (random ^ mask) + (mask & np.uint32(1));
 
     def next_max(self, max):
         if max <= 0:
-            yield 0;
-        yield self.gen() % np.uint32(max)
+            return 0;
+        return self.gen() % np.uint32(max)
 
     def next_min_max(self, range):
         difference = range[1] - range[0]
@@ -72,12 +62,8 @@ class JKiss:
     def next_double(self):
         a = self.gen() >> np.uint32(6)
         b = self.gen() >> np.uint32(5)
+        return np.float64(np.uint64(a) * np.uint64(134217728) + b) / np.float64(9007199254740992)
 
-        return np.float(np.uint64(a) * np.uint64(134217728) + b) / np.float(9007199254740992)
-
-
-def get_prng(seed):
-    return JKiss(seed)
 
 class GenStock:
     def __init__(self, items):
@@ -89,17 +75,60 @@ class GenItem:
         self.price = price
         self.quantity = quantity
 
+import json
+all_objects = []
+enumeration_entries = []
+eligible_objects = []
+
+with open("Objects.json", "r") as fh:
+    obj_data = json.load(fh)
+    for i, obj_idx in enumerate(obj_data):
+        obj = obj_data[obj_idx]
+        all_objects.append(obj)
+
+        name = obj["Name"]
+        price = obj["Price"]
+        ty = obj["Type"]
+        category = obj["Category"]
+        exclude = obj["ExcludeFromRandomSale"]
+        try:
+            oid = int(obj_idx)
+        except ValueError:
+            oid = -1
+        passes_random_items = (oid == -1 or oid >= 2 and oid <= 789) and not exclude and price > 0
+        if not passes_random_items:
+            enumeration_entries.append(ObjectClass.INELIGIBLE)
+            continue
+
+        # Layer 2
+        passes_condition = category < 0 \
+                and category != -999 \
+                and ty != "Quest" \
+                and ty != "Minerals" \
+                and ty != "Arch"
+        if not passes_condition:
+            enumeration_entries.append(ObjectClass.INTERMEDIATE)
+            continue
+
+        # Fully eligible for travelling cart
+        enumeration_entries.append(ObjectClass.FULLY_ELIGIBLE)
+        eligible_objects.append(EligibleObject(oid, name, price))
+
+TOTAL_OBJECTS = len(enumeration_entries)
+TOTAL_ELIGIBLE = len(eligible_objects)
+
 # Forward-simulate stock for a given platform and RNG seed
 def gen_stock(seed):
-    prng = get_prng(seed)
+    prng = JKiss(seed)
 
     # Phase A: assign a Next() key to every eligible object, take the 10 smallest.
     keyed = []
     for pos in range(TOTAL_OBJECTS):
         key = prng.next()
-        #if OBJECT_ENUMERATION[pos] is ObjectClass.FULLY_ELIGIBLE:  # (@ idx):  # TODO???
-        #    keyed.push((key, idx));
-    keyed.sort()  # TODO: sort by key using lambda
+        if enumeration_entries[pos] == ObjectClass.FULLY_ELIGIBLE:
+            keyed.append((int(key), pos))
+    keyed.sort()
+    print(keyed)
 
     # Phase B: price and quantity rolls, one per slot in sort-key (= UI slot) order.
     items = []
@@ -108,8 +137,8 @@ def gen_stock(seed):
         mult_idx = prng.next_max(3)
         qty_roll = prng.next_double()
 
-        #elig_idx = keyed[slot].1;  # TODO
-        base_price = ELIGIBLE_OBJECTS[elig_idx].price
+        elig_idx = v
+        base_price = all_objects[elig_idx]['Price']
         set_price = (set_idx + 1) * 100
         multiplied = base_price * {0:3, 1:4, 2:5}[mult_idx]
         price = max(set_price, multiplied)
@@ -284,7 +313,7 @@ def main():
     uid = 0
     day = 1
     season = 0  # caution: 0-index!
-    year = 2
+    year = 1
 
     # TODO: argparse
     ###         "--seed"
