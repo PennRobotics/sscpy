@@ -43,20 +43,20 @@ class JKiss:
         return np.uint32(self.x + self.y + self.z)
 
     def next(self):
-        random = self.gen()
-        while random == np.uint32(2147483648):
-            random = self.gen()
-        mask = random >> np.uint32(31);
-        return (random ^ mask) + (mask & np.uint32(1));
+        random = np.int32(self.gen())
+        while random == np.int32(-2147483648):
+            random = np.int32(self.gen())
+        mask = random >> np.int32(31);
+        return (random ^ mask) + (mask & np.int32(1));
 
     def next_max(self, max):
         if max <= 0:
             return 0;
-        return self.gen() % np.uint32(max)
+        return np.int32(self.gen() % np.int32(max))
 
     def next_min_max(self, range):
         difference = range[1] - range[0]
-        return np.uint32(range[0]) if difference <= 1 else np.uint32(range[0]) + (self.gen() % np.uint32(difference))
+        return np.int32(range[0]) if difference <= 1 else np.int32(range[0]) + (self.gen() % np.uint32(difference))
 
     def next_double(self):
         a = self.gen() >> np.uint32(6)
@@ -94,7 +94,7 @@ with open("Objects.json", "r") as fh:
             oid = int(obj_idx)
         except ValueError:
             oid = -1
-        passes_random_items = (oid == -1 or oid >= 2 and oid <= 789) and not exclude and price > 0
+        passes_random_items = (oid == -2 or oid >= 2 and oid <= 789) and not exclude and price > 0
         if not passes_random_items:
             enumeration_entries.append(ObjectClass.INELIGIBLE)
             continue
@@ -125,18 +125,17 @@ def gen_stock(seed):
     for pos in range(TOTAL_OBJECTS):
         key = prng.next()
         if enumeration_entries[pos] == ObjectClass.FULLY_ELIGIBLE:
-            keyed.append((int(key), pos))
+            keyed.append((int(np.uint32(key)), len(keyed)))
     keyed.sort()
 
     # Phase B: price and quantity rolls, one per slot in sort-key (= UI slot) order.
     items = []
-    for k, v in keyed:
+    for _, elig_idx in keyed[:10]:
         set_idx = prng.next_max(10)
         mult_idx = prng.next_max(3)
         qty_roll = prng.next_double()
 
-        elig_idx = v
-        base_price = all_objects[elig_idx]['Price']
+        base_price = eligible_objects[elig_idx].price
         set_price = (set_idx + 1) * 100
         multiplied = base_price * {0:3, 1:4, 2:5}[mult_idx]
         price = max(set_price, multiplied)
@@ -180,14 +179,12 @@ def main():
     print("User seed : {}".format(uid))
     print("Shop seed : {}".format(ctypes.c_int32(seed).value))
     print("")
-    print("{:<4}  {:<32}  {:>7}  {:>3}".format("Slot", "Item", "Price", "Qty"))
+    print("{:<4}  {:<32}  {:>7}   {:>3}".format("Slot", "Item", "Price", "Qty"))
     print("{}".format("-"*55))
 
     for slot, item in enumerate(stock.items):
         obj = eligible_objects[item.eligible_index]
         print("{:<4}  {:<32}  {:>6}g  {:>3}x".format(slot, obj.name, item.price, item.quantity))
-        if slot == 9:  # TODO: remove when gen_stock() is fixed
-            break
 
 if __name__ == "__main__":
     main()
