@@ -3,9 +3,17 @@ from enum import Enum, auto
 import struct
 
 import numpy as np
-import numba
+from numba.experimental import jitclass
+from numba import uint32, jit
 
 import xxhash
+
+spec = [
+        ('x', uint32),
+        ('y', uint32),
+        ('z', uint32),
+        ('c', uint32),
+        ]
 
 class ObjectClass(Enum):
     # Passes both Layer 1 and Layer 2 filters.
@@ -21,9 +29,10 @@ class EligibleObject:
         self.name = name
         self.price = price
 
+@jitclass(spec)
 class JKiss:
     def __init__(self, seed):
-        np.seterr(over='ignore')
+        #np.seterr(over='ignore')
         self.x = np.uint32(seed)
         self.y = np.uint32(987654321)
         self.z = np.uint32(43219876)
@@ -63,6 +72,9 @@ class JKiss:
         b = self.gen() >> np.uint32(5)
         return np.float64(np.uint64(a) * np.uint64(134217728) + b) / np.float64(9007199254740992)
 
+    def next_bool(self, thr=0.5):
+        return True if thr >= 1.0 else self.next_double() < thr
+
 
 class GenStock:
     def __init__(self, items):
@@ -78,6 +90,8 @@ import json
 all_objects = []
 enumeration_entries = []
 eligible_objects = []
+gddi = []  # Geode drops default items  (TODO-hi)
+gd = []  # Geode drops  (TODO-hi)
 
 with open("Objects.json", "r") as fh:
     obj_data = json.load(fh)
@@ -151,11 +165,11 @@ def gen_stock(seed):
 ### /// `xxHash32(pack_le_bytes([key_hash % 2147483647, uid % 2147483647, days_played % 2147483647, 0, 0]))`
 
 
-def main():
-    uid = 0
+def travelling_cart():
+    uid = 3000000000
     day = 1
-    season = 0  # caution: 0-index!
-    year = 1
+    season = 2  # caution: 0-index!
+    year = 2
     # TODO: argparse
     ###         "--seed"
     ###             uid = args[i].parse().expect("--seed must be a non-negative integer")
@@ -186,5 +200,84 @@ def main():
         obj = eligible_objects[item.eligible_index]
         print("{:<4}  {:<32}  {:>6}g  {:>3}x".format(slot, obj.name, item.price, item.quantity))
 
+
+deepestMineLevel = 10  # TODO
+
+def geode(multi_id, rock_count):
+    # No mystery box code! This is only for geodes!
+    user_id = 12345
+
+    xxHash32 = xxhash.xxh32()
+    xxHash32.update(struct.pack("<IIIII", rock_count, (user_id//2) % 2147483647, (multi_id//2) % 2147483647, 0, 0))
+    seed = xxHash32.intdigest()
+    r = JKiss(seed)
+
+    for _ in range(r.next_min_max((1, 10))):
+        r.next_double()
+    for _ in range(r.next_min_max((1, 10))):
+        r.next_double()
+    r.next_bool(0.1)  # Bean check (followup logic not needed for new character)
+    # Minerals
+    options = [538, 542, 548, 549, 552, 555, 556, 557, 558, 566, 568, 569, 571, 574, 576, 121]
+    if r.next_bool():  # 50/50 chance at minerals
+        r.next_bool(1.0)  # Nothing special other than minerals
+        return (options[r.next_max(len(options))], 1)
+    # Not Minerals
+    amount = int(r.next_max(3) * 2 + 1)
+    if r.next_bool(0.1):
+        amount = 10
+    if r.next_bool(0.01):
+        amount = 20
+    if r.next_bool():
+        match r.next_max(4):
+            case 0 | 1:
+                return (390, amount)
+            case 2:
+                return (330, 1)
+            case _:
+                #match geodeId:
+                return (86, 1)
+    #if geodeId != 535:  # Other types of geodes
+    #    ...
+    match r.next_max(3):
+        case 0:  return (378, amount)
+        case 1:  return (380, amount) if deepestMineLevel > 25 else (378, amount)
+        case _:  return (382, amount)
+    return (390, 1)
+
+OBJECT_LOOKUP = {
+        86: "Earth Crystal",
+        330: "Clay",
+        378: "Copper Ore",
+        382: "Coal",
+        390: "Stone",
+        538: "Alamite",
+        542: "Calcite",
+        548: "Jamborite",
+        549: "Jagoite",
+        552: "Malachite",
+        555: "Nekoite",
+        556: "Orpiment",
+        557: "Petrified Slime",
+        558: "Thunder Egg",
+        566: "Celestine",
+        568: "Sandstone",
+        569: "Granite",
+        571: "Limestone",
+        574: "Mudstone",
+        576: "Slate",
+        121: "Dwarvish Helm",
+        }
+
+
+def main():
+    for multi_id in range(0, 10, 2):
+        print(f"  MULTI {multi_id}")
+        for rock_count in range(17):
+            item, qty = geode(multi_id, rock_count)
+            print(f"{OBJECT_LOOKUP[item]} ({qty})")
+
 if __name__ == "__main__":
+    #travelling_cart()
     main()
+
